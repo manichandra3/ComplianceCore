@@ -1,0 +1,42 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "fraud-detective"
+version = "0.1.0"
+description = "Multi-agent AI fraud detection pipeline built on LangGraph"
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "MIT" }
+authors = [
+    { name = "FraudDetective Team" },
+]
+
+dependencies = [
+    "langgraph>=0.2",
+    "langchain-core>=0.3",
+    "pyarrow>=15.0",
+    "pyyaml>=6.0",
+    "neo4j>=5.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-cov>=5.0",
+]
+
+# Future integrations -- uncomment as services are wired up
+# llm = ["langchain-openai>=0.2", "langchain-anthropic>=0.2"]
+# cache = ["redis>=5.0"]
+
+[project.scripts]
+fraud-detective = "run_pipeline:main"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[tool.setuptools.packages.find]
+include = ["fraud_detection*"]

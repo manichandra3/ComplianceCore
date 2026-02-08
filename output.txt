@@ -1,0 +1,570 @@
+14:19:14 | INFO     | FraudDetective | Loading transactions from: /home/manichandra/developer/FraudDetective/data/sample_transactions.csv
+14:19:14 | INFO     | fraud_detection.core.loader | Loading CSV: /home/manichandra/developer/FraudDetective/data/sample_transactions.csv
+14:19:14 | INFO     | fraud_detection.core.loader |   Read 10 rows from sample_transactions.csv
+14:19:14 | INFO     | fraud_detection.core.loader | Loaded 10 valid transactions from sample_transactions.csv
+14:19:14 | INFO     | FraudDetective | Compiling FraudDetective pipeline graph...
+14:19:14 | INFO     | fraud_detection.core.graph | Pipeline compiled with conditional routing: clean transactions skip Pattern/Risk/Alert via fast-path
+14:19:14 | INFO     | FraudDetective | Pipeline compiled.  Processing 10 transactions from [/home/manichandra/developer/FraudDetective/data/sample_transactions.csv].
+
+
+################################################################################
+  PROCESSING TRANSACTION 1/10: TXN-2026-0001
+  Amount: $42.50 | Type: purchase | Channel: pos
+
+################################################################################
+14:19:14 | INFO     | fraud_detection.agents.monitoring | === Transaction Monitoring Agent: START ===
+14:19:14 | INFO     | fraud_detection.agents.monitoring | Processing transaction TXN-2026-0001 | amount=$42.50
+14:19:14 | INFO     | fraud_detection.agents.monitoring | Transaction TXN-2026-0001: 0 anomalies detected | is_anomalous=False
+14:19:14 | INFO     | fraud_detection.agents.monitoring | === Transaction Monitoring Agent: END ===
+
+14:19:14 | INFO     | fraud_detection.core.graph | Fast-path: transaction TXN-2026-0001 is clean -- setting defaults and skipping to compliance
+14:19:14 | INFO     | fraud_detection.agents.compliance | === Compliance Logging Agent: START ===
+14:19:14 | INFO     | fraud_detection.agents.compliance |   Generated audit entry: AUDIT-832868D231F8
+14:19:14 | INFO     | fraud_detection.agents.compliance |   Generated action log: ACTION-D08EF058ADE4
+14:19:14 | INFO     | fraud_detection.agents.compliance |   SAR not required (risk_score=0.0 < threshold=70.0)
+14:19:14 | INFO     | fraud_detection.agents.compliance | Transaction TXN-2026-0001: 2 compliance entries generated
+14:19:14 | INFO     | fraud_detection.agents.compliance | === Compliance Logging Agent: END ===
+
+
+================================================================================
+RESULT SUMMARY: TXN-2026-0001
+
+--------------------------------------------------------------------------------
+  Risk Score:  0.0/100
+  Breakdown:   anomaly=0.0  pattern=0.0  historical=0.0  velocity=0.0  model=0.0
+  Action:      ALLOW
+  Reason:      No anomalies detected -- fast-path clean transaction
+  Notified:    none
+  Anomalies:   0 flag(s)
+  Patterns:    0 detected
+  Compliance:  2 log entries
+    - [PIPELINE_AUDIT] AUDIT-832868D231F8
+      Run RUN-865A0A62 | Transaction TXN-2026-0001 | Amount: $42.50 | Risk: 0.0/100 | Action: ALLOW | Flags: [none] | Patterns...
+    - [TRANSACTION_ALLOWED] ACTION-D08EF058ADE4
+      Run RUN-865A0A62 | Action 'ALLOW' executed on transaction TXN-2026-0001 | Reason: No anomalies detected -- fast-path cle...
+
+================================================================================
+
+################################################################################
+  PROCESSING TRANSACTION 2/10: TXN-2026-0002
+  Amount: $15,750.00 | Type: transfer | Channel: online
+
+################################################################################
+14:19:14 | INFO     | fraud_detection.agents.monitoring | === Transaction Monitoring Agent: START ===
+14:19:14 | INFO     | fraud_detection.agents.monitoring | Processing transaction TXN-2026-0002 | amount=$15,750.00
+14:19:14 | INFO     | fraud_detection.agents.monitoring | Transaction TXN-2026-0002: 3 anomalies detected | is_anomalous=True
+14:19:14 | INFO     | fraud_detection.agents.monitoring |   [HIGH] high_value_txn: Transaction amount $15,750.00 exceeds high-value threshold $5,000.00
+14:19:14 | INFO     | fraud_detection.agents.monitoring |   [MEDIUM] geo_anomaly: Transaction from potentially risky location: Foreign - Lagos NG
+14:19:14 | INFO     | fraud_detection.agents.monitoring |   [MEDIUM] new_device: Transaction from previously unseen device: NEW_DEV-X9F3K2
+14:19:14 | INFO     | fraud_detection.agents.monitoring | === Transaction Monitoring Agent: END ===
+
+14:19:14 | INFO     | fraud_detection.agents.pattern_detection | === Pattern Detection Agent: START ===
+14:19:14 | INFO     | fraud_detection.agents.pattern_detection | Analysing transaction TXN-2026-0002 with 3 upstream anomaly flags
+14:19:14 | INFO     | fraud_detection.core.neo4j_client | Neo4j driver created for bolt://localhost:7687 (database=fraud_graph)
+14:19:14 | ERROR    | fraud_detection.core.neo4j_client | Neo4j connectivity check failed: {neo4j_code: Neo.ClientError.Security.Unauthorized} {message: Unsupported authentication token, missing key `credentials`} {gql_status: 42NFF} {gql_status_description: error: syntax error or access rule violation - permission/access denied. Access denied, see the security logs for details.}
+14:19:14 | INFO     | fraud_detection.agents.pattern_detection | Using heuristic pattern detectors (Neo4j unavailable)
+14:19:14 | INFO     | fraud_detection.agents.pattern_detection | Transaction TXN-2026-0002: 1 patterns detected
+14:19:14 | INFO     | fraud_detection.agents.pattern_detection |   [NETWORK] mule_network_candidate: Large transfer of $15,750.00 to MULE-ACCT-7799 -- potential mule network relay (confidence=0.55)
+14:19:14 | INFO     | fraud_detection.agents.pattern_detection | === Pattern Detection Agent: END ===
+
+14:19:14 | INFO     | fraud_detection.agents.risk_assessment | === Risk Assessment Agent: START ===
+14:19:14 | INFO     | fraud_detection.agents.risk_assessment | Transaction TXN-2026-0002: RISK SCORE = 57.5/100
+14:19:14 | INFO     | fraud_detection.agents.risk_assessment |   Breakdown: anomaly=41.4 pattern=57.2 historical=70.0 velocity=45.0 model=85.0
+14:19:14 | INFO     | fraud_detection.agents.risk_assessment |   Weights:   anomaly=0.25 pattern=0.3 historical=0.15 velocity=0.15 model=0.15
+14:19:14 | INFO     | fraud_detection.agents.risk_assessment | === Risk Assessment Agent: END ===
+
+14:19:14 | INFO     | fraud_detection.agents.alert_block | === Alert / Block Agent: START ===
+14:19:14 | INFO     | fraud_detection.agents.alert_block | FLAGGING transaction TXN-2026-0002 (risk=57.5)
+14:19:14 | INFO     | fraud_detection.agents.alert_block | Transaction TXN-2026-0002: ACTION = FLAG | reason = Risk score 57.5 >= flag threshold 40.0
+14:19:14 | INFO     | fraud_detection.agents.alert_block |   Notified: fraud_ops
+14:19:14 | INFO     | fraud_detection.agents.alert_block | === Alert / Block Agent: END ===
+
+14:19:14 | INFO     | fraud_detection.agents.compliance | === Compliance Logging Agent: START ===
+14:19:14 | INFO     | fraud_detection.agents.compliance |   Generated audit entry: AUDIT-F1756CCBC790
+14:19:14 | INFO     | fraud_detection.agents.compliance |   Generated action log: ACTION-0FB601E6ACF4
+14:19:14 | INFO     | fraud_detection.agents.compliance |   SAR not required (risk_score=57.5 < threshold=70.0)
+14:19:14 | INFO     | fraud_detection.agents.compliance | Transaction TXN-2026-0002: 2 compliance entries generated
+14:19:14 | INFO     | fraud_detection.agents.compliance | === Compliance Logging Agent: END ===
+
+
+================================================================================
+RESULT SUMMARY: TXN-2026-0002
+
+--------------------------------------------------------------------------------
+  Risk Score:  57.5/100
+  Breakdown:   anomaly=41.4  pattern=57.2  historical=70.0  velocity=45.0  model=85.0
+  Action:      FLAG
+  Reason:      Risk score 57.5 >= flag threshold 40.0
+  Notified:    fraud_ops
+  Anomalies:   3 flag(s)
+    - [HIGH] high_value_txn: Transaction amount $15,750.00 exceeds high-value threshold $5,000.00
+    - [MEDIUM] geo_anomaly: Transaction from potentially risky location: Foreign - Lagos NG
+    - [MEDIUM] new_device: Transaction from previously unseen device: NEW_DEV-X9F3K2
+  Patterns:    1 detected
+    - [NETWORK] mule_network_candidate: Large transfer of $15,750.00 to MULE-ACCT-7799 -- potential mule network relay
+  Compliance:  2 log entries
+    - [PIPELINE_AUDIT] AUDIT-F1756CCBC790
+      Run RUN-749787AA | Transaction TXN-2026-0002 | Amount: $15,750.00 | Risk: 57.5/100 | Action: FLAG | Flags: [high_value_t...
+    - [TRANSACTION_FLAGGED] ACTION-0FB601E6ACF4
+      Run RUN-749787AA | Action 'FLAG' executed on transaction TXN-2026-0002 | Reason: Risk score 57.5 >= flag threshold 40.0 ...
+
+================================================================================
+
+################################################################################
+  PROCESSING TRANSACTION 3/10: TXN-2026-0003
+  Amount: $9,400.00 | Type: deposit | Channel: atm
+
+################################################################################
+14:19:14 | INFO     | fraud_detection.agents.monitoring | === Transaction Monitoring Agent: START ===
+14:19:14 | INFO     | fraud_detection.agents.monitoring | Processing transaction TXN-2026-0003 | amount=$9,400.00
+14:19:14 | INFO     | fraud_detection.agents.monitoring | Transaction TXN-2026-0003: 1 anomalies detected | is_anomalous=True
+14:19:14 | INFO     | fraud_detection.agents.monitoring |   [MEDIUM] high_value_txn: Transaction amount $9,400.00 exceeds high-value threshold $5,000.00
+14:19:14 | INFO     | fraud_detection.agents.monitoring | === Transaction Monitoring Agent: END ===
+
+14:19:14 | INFO     | fraud_detection.agents.pattern_detection | === Pattern Detection Agent: START ===
+14:19:14 | INFO     | fraud_detection.agents.pattern_detection | Analysing transaction TXN-2026-0003 with 1 upstream anomaly flags
+14:19:14 | ERROR    | fraud_detection.core.neo4j_client | Neo4j connectivity check failed: {neo4j_code: Neo.ClientError.Security.Unauthorized} {message: Unsupported authentication token, missing key `credentials`} {gql_status: 42NFF} {gql_status_description: error: syntax error or access rule violation - permission/access denied. Access denied, see the security logs for details.}
+14:19:14 | INFO     | fraud_detection.agents.pattern_detection | Using heuristic pattern detectors (Neo4j unavailable)
+14:19:14 | INFO     | fraud_detection.agents.pattern_detection | Transaction TXN-2026-0003: 1 patterns detected
+14:19:14 | INFO     | fraud_detection.agents.pattern_detection |   [SEQUENCE] structuring_suspect: Transaction of $9,400.00 is 600.00 below the $10,000 CTR reporting threshold (confidence=0.65)
+14:19:14 | INFO     | fraud_detection.agents.pattern_detection | === Pattern Detection Agent: END ===
+
+14:19:14 | INFO     | fraud_detection.agents.risk_assessment | === Risk Assessment Agent: START ===
+14:19:14 | INFO     | fraud_detection.agents.risk_assessment | Transaction TXN-2026-0003: RISK SCORE = 42.53/100
+14:19:14 | INFO     | fraud_detection.agents.risk_assessment |   Breakdown: anomaly=23.5 pattern=57.2 historical=50.0 velocity=30.0 model=50.0
+14:19:14 | INFO     | fraud_detection.agents.risk_assessment |   Weights:   anomaly=0.25 pattern=0.3 historical=0.15 velocity=0.15 model=0.15
+14:19:14 | INFO     | fraud_detection.agents.risk_assessment | === Risk Assessment Agent: END ===
+
+14:19:14 | INFO     | fraud_detection.agents.alert_block | === Alert / Block Agent: START ===
+14:19:14 | INFO     | fraud_detection.agents.alert_block | FLAGGING transaction TXN-2026-0003 (risk=42.53)
+14:19:14 | INFO     | fraud_detection.agents.alert_block | Transaction TXN-2026-0003: ACTION = FLAG | reason = Risk score 42.53 >= flag threshold 40.0
+14:19:14 | INFO     | fraud_detection.agents.alert_block |   Notified: fraud_ops
+14:19:14 | INFO     | fraud_detection.agents.alert_block | === Alert / Block Agent: END ===
+
+14:19:14 | INFO     | fraud_detection.agents.compliance | === Compliance Logging Agent: START ===
+14:19:14 | INFO     | fraud_detection.agents.compliance |   Generated audit entry: AUDIT-7FB9F280DC20
+14:19:14 | INFO     | fraud_detection.agents.compliance |   Generated action log: ACTION-F227D409B0FF
+14:19:14 | INFO     | fraud_detection.agents.compliance |   SAR not required (risk_score=42.53 < threshold=70.0)
+14:19:14 | INFO     | fraud_detection.agents.compliance | Transaction TXN-2026-0003: 2 compliance entries generated
+14:19:14 | INFO     | fraud_detection.agents.compliance | === Compliance Logging Agent: END ===
+
+
+================================================================================
+RESULT SUMMARY: TXN-2026-0003
+
+--------------------------------------------------------------------------------
+  Risk Score:  42.53/100
+  Breakdown:   anomaly=23.5  pattern=57.2  historical=50.0  velocity=30.0  model=50.0
+  Action:      FLAG
+  Reason:      Risk score 42.53 >= flag threshold 40.0
+  Notified:    fraud_ops
+  Anomalies:   1 flag(s)
+    - [MEDIUM] high_value_txn: Transaction amount $9,400.00 exceeds high-value threshold $5,000.00
+  Patterns:    1 detected
+    - [SEQUENCE] structuring_suspect: Transaction of $9,400.00 is 600.00 below the $10,000 CTR reporting threshold
+  Compliance:  2 log entries
+    - [PIPELINE_AUDIT] AUDIT-7FB9F280DC20
+      Run RUN-2C237A60 | Transaction TXN-2026-0003 | Amount: $9,400.00 | Risk: 42.53/100 | Action: FLAG | Flags: [high_value_t...
+    - [TRANSACTION_FLAGGED] ACTION-F227D409B0FF
+      Run RUN-2C237A60 | Action 'FLAG' executed on transaction TXN-2026-0003 | Reason: Risk score 42.53 >= flag threshold 40.0...
+
+================================================================================
+
+################################################################################
+  PROCESSING TRANSACTION 4/10: TXN-2026-0004
+  Amount: $890.00 | Type: purchase | Channel: online
+
+################################################################################
+14:19:14 | INFO     | fraud_detection.agents.monitoring | === Transaction Monitoring Agent: START ===
+14:19:14 | INFO     | fraud_detection.agents.monitoring | Processing transaction TXN-2026-0004 | amount=$890.00
+14:19:14 | INFO     | fraud_detection.agents.monitoring | Transaction TXN-2026-0004: 1 anomalies detected | is_anomalous=True
+14:19:14 | INFO     | fraud_detection.agents.monitoring |   [MEDIUM] new_device: Transaction from previously unseen device: NEW_DEV-Q7W8E9
+14:19:14 | INFO     | fraud_detection.agents.monitoring | === Transaction Monitoring Agent: END ===
+
+14:19:14 | INFO     | fraud_detection.agents.pattern_detection | === Pattern Detection Agent: START ===
+14:19:14 | INFO     | fraud_detection.agents.pattern_detection | Analysing transaction TXN-2026-0004 with 1 upstream anomaly flags
+14:19:14 | ERROR    | fraud_detection.core.neo4j_client | Neo4j connectivity check failed: {neo4j_code: Neo.ClientError.Security.Unauthorized} {message: Unsupported authentication token, missing key `credentials`} {gql_status: 42NFF} {gql_status_description: error: syntax error or access rule violation - permission/access denied. Access denied, see the security logs for details.}
+14:19:14 | INFO     | fraud_detection.agents.pattern_detection | Using heuristic pattern detectors (Neo4j unavailable)
+14:19:14 | INFO     | fraud_detection.agents.pattern_detection | Transaction TXN-2026-0004: 0 patterns detected
+14:19:14 | INFO     | fraud_detection.agents.pattern_detection | === Pattern Detection Agent: END ===
+
+14:19:14 | INFO     | fraud_detection.agents.risk_assessment | === Risk Assessment Agent: START ===
+14:19:14 | INFO     | fraud_detection.agents.risk_assessment | Transaction TXN-2026-0004: RISK SCORE = 23.0/100
+14:19:14 | INFO     | fraud_detection.agents.risk_assessment |   Breakdown: anomaly=35.0 pattern=0.0 historical=15.0 velocity=45.0 model=35.0
+14:19:14 | INFO     | fraud_detection.agents.risk_assessment |   Weights:   anomaly=0.25 pattern=0.3 historical=0.15 velocity=0.15 model=0.15
+14:19:14 | INFO     | fraud_detection.agents.risk_assessment | === Risk Assessment Agent: END ===
+
+14:19:14 | INFO     | fraud_detection.agents.alert_block | === Alert / Block Agent: START ===
+14:19:14 | INFO     | fraud_detection.agents.alert_block | ALLOWING transaction TXN-2026-0004 (risk=23.0)
+14:19:14 | INFO     | fraud_detection.agents.alert_block | Transaction TXN-2026-0004: ACTION = ALLOW | reason = Risk score 23.0 below all thresholds
+14:19:14 | INFO     | fraud_detection.agents.alert_block | === Alert / Block Agent: END ===
+
+14:19:14 | INFO     | fraud_detection.agents.compliance | === Compliance Logging Agent: START ===
+14:19:14 | INFO     | fraud_detection.agents.compliance |   Generated audit entry: AUDIT-8B775EA1C76E
+14:19:14 | INFO     | fraud_detection.agents.compliance |   Generated action log: ACTION-0D1DAA9F9B74
+14:19:14 | INFO     | fraud_detection.agents.compliance |   SAR not required (risk_score=23.0 < threshold=70.0)
+14:19:14 | INFO     | fraud_detection.agents.compliance | Transaction TXN-2026-0004: 2 compliance entries generated
+14:19:14 | INFO     | fraud_detection.agents.compliance | === Compliance Logging Agent: END ===
+
+
+================================================================================
+RESULT SUMMARY: TXN-2026-0004
+
+--------------------------------------------------------------------------------
+  Risk Score:  23.0/100
+  Breakdown:   anomaly=35.0  pattern=0.0  historical=15.0  velocity=45.0  model=35.0
+  Action:      ALLOW
+  Reason:      Risk score 23.0 below all thresholds
+  Notified:    none
+  Anomalies:   1 flag(s)
+    - [MEDIUM] new_device: Transaction from previously unseen device: NEW_DEV-Q7W8E9
+  Patterns:    0 detected
+  Compliance:  2 log entries
+    - [PIPELINE_AUDIT] AUDIT-8B775EA1C76E
+      Run RUN-EEC4CAC2 | Transaction TXN-2026-0004 | Amount: $890.00 | Risk: 23.0/100 | Action: ALLOW | Flags: [new_device] | ...
+    - [TRANSACTION_ALLOWED] ACTION-0D1DAA9F9B74
+      Run RUN-EEC4CAC2 | Action 'ALLOW' executed on transaction TXN-2026-0004 | Reason: Risk score 23.0 below all thresholds |...
+
+================================================================================
+
+################################################################################
+  PROCESSING TRANSACTION 5/10: TXN-2026-0005
+  Amount: $3,200.00 | Type: purchase | Channel: pos
+
+################################################################################
+14:19:14 | INFO     | fraud_detection.agents.monitoring | === Transaction Monitoring Agent: START ===
+14:19:14 | INFO     | fraud_detection.agents.monitoring | Processing transaction TXN-2026-0005 | amount=$3,200.00
+14:19:14 | INFO     | fraud_detection.agents.monitoring | Transaction TXN-2026-0005: 0 anomalies detected | is_anomalous=False
+14:19:14 | INFO     | fraud_detection.agents.monitoring | === Transaction Monitoring Agent: END ===
+
+14:19:14 | INFO     | fraud_detection.core.graph | Fast-path: transaction TXN-2026-0005 is clean -- setting defaults and skipping to compliance
+14:19:14 | INFO     | fraud_detection.agents.compliance | === Compliance Logging Agent: START ===
+14:19:14 | INFO     | fraud_detection.agents.compliance |   Generated audit entry: AUDIT-79171E80385E
+14:19:14 | INFO     | fraud_detection.agents.compliance |   Generated action log: ACTION-87E75D74200E
+14:19:14 | INFO     | fraud_detection.agents.compliance |   SAR not required (risk_score=0.0 < threshold=70.0)
+14:19:14 | INFO     | fraud_detection.agents.compliance | Transaction TXN-2026-0005: 2 compliance entries generated
+14:19:14 | INFO     | fraud_detection.agents.compliance | === Compliance Logging Agent: END ===
+
+
+================================================================================
+RESULT SUMMARY: TXN-2026-0005
+
+--------------------------------------------------------------------------------
+  Risk Score:  0.0/100
+  Breakdown:   anomaly=0.0  pattern=0.0  historical=0.0  velocity=0.0  model=0.0
+  Action:      ALLOW
+  Reason:      No anomalies detected -- fast-path clean transaction
+  Notified:    none
+  Anomalies:   0 flag(s)
+  Patterns:    0 detected
+  Compliance:  2 log entries
+    - [PIPELINE_AUDIT] AUDIT-79171E80385E
+      Run RUN-E92957E0 | Transaction TXN-2026-0005 | Amount: $3,200.00 | Risk: 0.0/100 | Action: ALLOW | Flags: [none] | Patte...
+    - [TRANSACTION_ALLOWED] ACTION-87E75D74200E
+      Run RUN-E92957E0 | Action 'ALLOW' executed on transaction TXN-2026-0005 | Reason: No anomalies detected -- fast-path cle...
+
+================================================================================
+
+################################################################################
+  PROCESSING TRANSACTION 6/10: TXN-2026-0006
+  Amount: $9,950.00 | Type: deposit | Channel: online
+
+################################################################################
+14:19:14 | INFO     | fraud_detection.agents.monitoring | === Transaction Monitoring Agent: START ===
+14:19:14 | INFO     | fraud_detection.agents.monitoring | Processing transaction TXN-2026-0006 | amount=$9,950.00
+14:19:14 | INFO     | fraud_detection.agents.monitoring | Transaction TXN-2026-0006: 1 anomalies detected | is_anomalous=True
+14:19:14 | INFO     | fraud_detection.agents.monitoring |   [MEDIUM] high_value_txn: Transaction amount $9,950.00 exceeds high-value threshold $5,000.00
+14:19:14 | INFO     | fraud_detection.agents.monitoring | === Transaction Monitoring Agent: END ===
+
+14:19:14 | INFO     | fraud_detection.agents.pattern_detection | === Pattern Detection Agent: START ===
+14:19:14 | INFO     | fraud_detection.agents.pattern_detection | Analysing transaction TXN-2026-0006 with 1 upstream anomaly flags
+14:19:14 | ERROR    | fraud_detection.core.neo4j_client | Neo4j connectivity check failed: {neo4j_code: Neo.ClientError.Security.Unauthorized} {message: Unsupported authentication token, missing key `credentials`} {gql_status: 42NFF} {gql_status_description: error: syntax error or access rule violation - permission/access denied. Access denied, see the security logs for details.}
+14:19:14 | INFO     | fraud_detection.agents.pattern_detection | Using heuristic pattern detectors (Neo4j unavailable)
+14:19:14 | INFO     | fraud_detection.agents.pattern_detection | Transaction TXN-2026-0006: 1 patterns detected
+14:19:14 | INFO     | fraud_detection.agents.pattern_detection |   [SEQUENCE] structuring_suspect: Transaction of $9,950.00 is 50.00 below the $10,000 CTR reporting threshold (confidence=0.65)
+14:19:14 | INFO     | fraud_detection.agents.pattern_detection | === Pattern Detection Agent: END ===
+
+14:19:14 | INFO     | fraud_detection.agents.risk_assessment | === Risk Assessment Agent: START ===
+14:19:14 | INFO     | fraud_detection.agents.risk_assessment | Transaction TXN-2026-0006: RISK SCORE = 45.13/100
+14:19:14 | INFO     | fraud_detection.agents.risk_assessment |   Breakdown: anomaly=24.9 pattern=57.2 historical=50.0 velocity=45.0 model=50.0
+14:19:14 | INFO     | fraud_detection.agents.risk_assessment |   Weights:   anomaly=0.25 pattern=0.3 historical=0.15 velocity=0.15 model=0.15
+14:19:14 | INFO     | fraud_detection.agents.risk_assessment | === Risk Assessment Agent: END ===
+
+14:19:14 | INFO     | fraud_detection.agents.alert_block | === Alert / Block Agent: START ===
+14:19:14 | INFO     | fraud_detection.agents.alert_block | FLAGGING transaction TXN-2026-0006 (risk=45.13)
+14:19:14 | INFO     | fraud_detection.agents.alert_block | Transaction TXN-2026-0006: ACTION = FLAG | reason = Risk score 45.13 >= flag threshold 40.0
+14:19:14 | INFO     | fraud_detection.agents.alert_block |   Notified: fraud_ops
+14:19:14 | INFO     | fraud_detection.agents.alert_block | === Alert / Block Agent: END ===
+
+14:19:14 | INFO     | fraud_detection.agents.compliance | === Compliance Logging Agent: START ===
+14:19:14 | INFO     | fraud_detection.agents.compliance |   Generated audit entry: AUDIT-1A876934406F
+14:19:14 | INFO     | fraud_detection.agents.compliance |   Generated action log: ACTION-BAACC5E9300E
+14:19:14 | INFO     | fraud_detection.agents.compliance |   SAR not required (risk_score=45.13 < threshold=70.0)
+14:19:14 | INFO     | fraud_detection.agents.compliance | Transaction TXN-2026-0006: 2 compliance entries generated
+14:19:14 | INFO     | fraud_detection.agents.compliance | === Compliance Logging Agent: END ===
+
+
+================================================================================
+RESULT SUMMARY: TXN-2026-0006
+
+--------------------------------------------------------------------------------
+  Risk Score:  45.13/100
+  Breakdown:   anomaly=24.9  pattern=57.2  historical=50.0  velocity=45.0  model=50.0
+  Action:      FLAG
+  Reason:      Risk score 45.13 >= flag threshold 40.0
+  Notified:    fraud_ops
+  Anomalies:   1 flag(s)
+    - [MEDIUM] high_value_txn: Transaction amount $9,950.00 exceeds high-value threshold $5,000.00
+  Patterns:    1 detected
+    - [SEQUENCE] structuring_suspect: Transaction of $9,950.00 is 50.00 below the $10,000 CTR reporting threshold
+  Compliance:  2 log entries
+    - [PIPELINE_AUDIT] AUDIT-1A876934406F
+      Run RUN-8AB901D0 | Transaction TXN-2026-0006 | Amount: $9,950.00 | Risk: 45.13/100 | Action: FLAG | Flags: [high_value_t...
+    - [TRANSACTION_FLAGGED] ACTION-BAACC5E9300E
+      Run RUN-8AB901D0 | Action 'FLAG' executed on transaction TXN-2026-0006 | Reason: Risk score 45.13 >= flag threshold 40.0...
+
+================================================================================
+
+################################################################################
+  PROCESSING TRANSACTION 7/10: TXN-2026-0007
+  Amount: $9,800.00 | Type: deposit | Channel: online
+
+################################################################################
+14:19:14 | INFO     | fraud_detection.agents.monitoring | === Transaction Monitoring Agent: START ===
+14:19:14 | INFO     | fraud_detection.agents.monitoring | Processing transaction TXN-2026-0007 | amount=$9,800.00
+14:19:14 | INFO     | fraud_detection.agents.monitoring | Transaction TXN-2026-0007: 1 anomalies detected | is_anomalous=True
+14:19:14 | INFO     | fraud_detection.agents.monitoring |   [MEDIUM] high_value_txn: Transaction amount $9,800.00 exceeds high-value threshold $5,000.00
+14:19:14 | INFO     | fraud_detection.agents.monitoring | === Transaction Monitoring Agent: END ===
+
+14:19:14 | INFO     | fraud_detection.agents.pattern_detection | === Pattern Detection Agent: START ===
+14:19:14 | INFO     | fraud_detection.agents.pattern_detection | Analysing transaction TXN-2026-0007 with 1 upstream anomaly flags
+14:19:14 | ERROR    | fraud_detection.core.neo4j_client | Neo4j connectivity check failed: {neo4j_code: Neo.ClientError.Security.Unauthorized} {message: Unsupported authentication token, missing key `credentials`} {gql_status: 42NFF} {gql_status_description: error: syntax error or access rule violation - permission/access denied. Access denied, see the security logs for details.}
+14:19:14 | INFO     | fraud_detection.agents.pattern_detection | Using heuristic pattern detectors (Neo4j unavailable)
+14:19:14 | INFO     | fraud_detection.agents.pattern_detection | Transaction TXN-2026-0007: 1 patterns detected
+14:19:14 | INFO     | fraud_detection.agents.pattern_detection |   [SEQUENCE] structuring_suspect: Transaction of $9,800.00 is 200.00 below the $10,000 CTR reporting threshold (confidence=0.65)
+14:19:14 | INFO     | fraud_detection.agents.pattern_detection | === Pattern Detection Agent: END ===
+
+14:19:14 | INFO     | fraud_detection.agents.risk_assessment | === Risk Assessment Agent: START ===
+14:19:14 | INFO     | fraud_detection.agents.risk_assessment | Transaction TXN-2026-0007: RISK SCORE = 45.03/100
+14:19:14 | INFO     | fraud_detection.agents.risk_assessment |   Breakdown: anomaly=24.5 pattern=57.2 historical=50.0 velocity=45.0 model=50.0
+14:19:14 | INFO     | fraud_detection.agents.risk_assessment |   Weights:   anomaly=0.25 pattern=0.3 historical=0.15 velocity=0.15 model=0.15
+14:19:14 | INFO     | fraud_detection.agents.risk_assessment | === Risk Assessment Agent: END ===
+
+14:19:14 | INFO     | fraud_detection.agents.alert_block | === Alert / Block Agent: START ===
+14:19:14 | INFO     | fraud_detection.agents.alert_block | FLAGGING transaction TXN-2026-0007 (risk=45.03)
+14:19:14 | INFO     | fraud_detection.agents.alert_block | Transaction TXN-2026-0007: ACTION = FLAG | reason = Risk score 45.03 >= flag threshold 40.0
+14:19:14 | INFO     | fraud_detection.agents.alert_block |   Notified: fraud_ops
+14:19:14 | INFO     | fraud_detection.agents.alert_block | === Alert / Block Agent: END ===
+
+14:19:14 | INFO     | fraud_detection.agents.compliance | === Compliance Logging Agent: START ===
+14:19:14 | INFO     | fraud_detection.agents.compliance |   Generated audit entry: AUDIT-0AFD778BF098
+14:19:14 | INFO     | fraud_detection.agents.compliance |   Generated action log: ACTION-50D5EFB209ED
+14:19:14 | INFO     | fraud_detection.agents.compliance |   SAR not required (risk_score=45.03 < threshold=70.0)
+14:19:14 | INFO     | fraud_detection.agents.compliance | Transaction TXN-2026-0007: 2 compliance entries generated
+14:19:14 | INFO     | fraud_detection.agents.compliance | === Compliance Logging Agent: END ===
+
+
+================================================================================
+RESULT SUMMARY: TXN-2026-0007
+
+--------------------------------------------------------------------------------
+  Risk Score:  45.03/100
+  Breakdown:   anomaly=24.5  pattern=57.2  historical=50.0  velocity=45.0  model=50.0
+  Action:      FLAG
+  Reason:      Risk score 45.03 >= flag threshold 40.0
+  Notified:    fraud_ops
+  Anomalies:   1 flag(s)
+    - [MEDIUM] high_value_txn: Transaction amount $9,800.00 exceeds high-value threshold $5,000.00
+  Patterns:    1 detected
+    - [SEQUENCE] structuring_suspect: Transaction of $9,800.00 is 200.00 below the $10,000 CTR reporting threshold
+  Compliance:  2 log entries
+    - [PIPELINE_AUDIT] AUDIT-0AFD778BF098
+      Run RUN-39B660C2 | Transaction TXN-2026-0007 | Amount: $9,800.00 | Risk: 45.03/100 | Action: FLAG | Flags: [high_value_t...
+    - [TRANSACTION_FLAGGED] ACTION-50D5EFB209ED
+      Run RUN-39B660C2 | Action 'FLAG' executed on transaction TXN-2026-0007 | Reason: Risk score 45.03 >= flag threshold 40.0...
+
+================================================================================
+
+################################################################################
+  PROCESSING TRANSACTION 8/10: TXN-2026-0008
+  Amount: $22,000.00 | Type: transfer | Channel: online
+
+################################################################################
+14:19:14 | INFO     | fraud_detection.agents.monitoring | === Transaction Monitoring Agent: START ===
+14:19:14 | INFO     | fraud_detection.agents.monitoring | Processing transaction TXN-2026-0008 | amount=$22,000.00
+14:19:14 | INFO     | fraud_detection.agents.monitoring | Transaction TXN-2026-0008: 3 anomalies detected | is_anomalous=True
+14:19:14 | INFO     | fraud_detection.agents.monitoring |   [HIGH] high_value_txn: Transaction amount $22,000.00 exceeds high-value threshold $5,000.00
+14:19:14 | INFO     | fraud_detection.agents.monitoring |   [MEDIUM] geo_anomaly: Transaction from potentially risky location: Foreign - Cayman Islands KY
+14:19:14 | INFO     | fraud_detection.agents.monitoring |   [MEDIUM] new_device: Transaction from previously unseen device: NEW_DEV-Z1Y2X3
+14:19:14 | INFO     | fraud_detection.agents.monitoring | === Transaction Monitoring Agent: END ===
+
+14:19:14 | INFO     | fraud_detection.agents.pattern_detection | === Pattern Detection Agent: START ===
+14:19:14 | INFO     | fraud_detection.agents.pattern_detection | Analysing transaction TXN-2026-0008 with 3 upstream anomaly flags
+14:19:14 | ERROR    | fraud_detection.core.neo4j_client | Neo4j connectivity check failed: {neo4j_code: Neo.ClientError.Security.Unauthorized} {message: Unsupported authentication token, missing key `credentials`} {gql_status: 42NFF} {gql_status_description: error: syntax error or access rule violation - permission/access denied. Access denied, see the security logs for details.}
+14:19:14 | INFO     | fraud_detection.agents.pattern_detection | Using heuristic pattern detectors (Neo4j unavailable)
+14:19:14 | INFO     | fraud_detection.agents.pattern_detection | Transaction TXN-2026-0008: 1 patterns detected
+14:19:14 | INFO     | fraud_detection.agents.pattern_detection |   [NETWORK] mule_network_candidate: Large transfer of $22,000.00 to SHELL-ACCT-0055 -- potential mule network relay (confidence=0.55)
+14:19:14 | INFO     | fraud_detection.agents.pattern_detection | === Pattern Detection Agent: END ===
+
+14:19:14 | INFO     | fraud_detection.agents.risk_assessment | === Risk Assessment Agent: START ===
+14:19:14 | INFO     | fraud_detection.agents.risk_assessment | Transaction TXN-2026-0008: RISK SCORE = 58.83/100
+14:19:14 | INFO     | fraud_detection.agents.risk_assessment |   Breakdown: anomaly=46.7 pattern=57.2 historical=70.0 velocity=45.0 model=85.0
+14:19:14 | INFO     | fraud_detection.agents.risk_assessment |   Weights:   anomaly=0.25 pattern=0.3 historical=0.15 velocity=0.15 model=0.15
+14:19:14 | INFO     | fraud_detection.agents.risk_assessment | === Risk Assessment Agent: END ===
+
+14:19:14 | INFO     | fraud_detection.agents.alert_block | === Alert / Block Agent: START ===
+14:19:14 | INFO     | fraud_detection.agents.alert_block | FLAGGING transaction TXN-2026-0008 (risk=58.83)
+14:19:14 | INFO     | fraud_detection.agents.alert_block | Transaction TXN-2026-0008: ACTION = FLAG | reason = Risk score 58.83 >= flag threshold 40.0
+14:19:14 | INFO     | fraud_detection.agents.alert_block |   Notified: fraud_ops
+14:19:14 | INFO     | fraud_detection.agents.alert_block | === Alert / Block Agent: END ===
+
+14:19:14 | INFO     | fraud_detection.agents.compliance | === Compliance Logging Agent: START ===
+14:19:14 | INFO     | fraud_detection.agents.compliance |   Generated audit entry: AUDIT-A711E01B3694
+14:19:14 | INFO     | fraud_detection.agents.compliance |   Generated action log: ACTION-B8B67CFB3067
+14:19:14 | INFO     | fraud_detection.agents.compliance |   SAR not required (risk_score=58.83 < threshold=70.0)
+14:19:14 | INFO     | fraud_detection.agents.compliance | Transaction TXN-2026-0008: 2 compliance entries generated
+14:19:14 | INFO     | fraud_detection.agents.compliance | === Compliance Logging Agent: END ===
+
+
+================================================================================
+RESULT SUMMARY: TXN-2026-0008
+
+--------------------------------------------------------------------------------
+  Risk Score:  58.83/100
+  Breakdown:   anomaly=46.7  pattern=57.2  historical=70.0  velocity=45.0  model=85.0
+  Action:      FLAG
+  Reason:      Risk score 58.83 >= flag threshold 40.0
+  Notified:    fraud_ops
+  Anomalies:   3 flag(s)
+    - [HIGH] high_value_txn: Transaction amount $22,000.00 exceeds high-value threshold $5,000.00
+    - [MEDIUM] geo_anomaly: Transaction from potentially risky location: Foreign - Cayman Islands KY
+    - [MEDIUM] new_device: Transaction from previously unseen device: NEW_DEV-Z1Y2X3
+  Patterns:    1 detected
+    - [NETWORK] mule_network_candidate: Large transfer of $22,000.00 to SHELL-ACCT-0055 -- potential mule network relay
+  Compliance:  2 log entries
+    - [PIPELINE_AUDIT] AUDIT-A711E01B3694
+      Run RUN-28EA0FA8 | Transaction TXN-2026-0008 | Amount: $22,000.00 | Risk: 58.83/100 | Action: FLAG | Flags: [high_value_...
+    - [TRANSACTION_FLAGGED] ACTION-B8B67CFB3067
+      Run RUN-28EA0FA8 | Action 'FLAG' executed on transaction TXN-2026-0008 | Reason: Risk score 58.83 >= flag threshold 40.0...
+
+================================================================================
+
+################################################################################
+  PROCESSING TRANSACTION 9/10: TXN-2026-0009
+  Amount: $18.75 | Type: purchase | Channel: pos
+
+################################################################################
+14:19:14 | INFO     | fraud_detection.agents.monitoring | === Transaction Monitoring Agent: START ===
+14:19:14 | INFO     | fraud_detection.agents.monitoring | Processing transaction TXN-2026-0009 | amount=$18.75
+14:19:14 | INFO     | fraud_detection.agents.monitoring | Transaction TXN-2026-0009: 0 anomalies detected | is_anomalous=False
+14:19:14 | INFO     | fraud_detection.agents.monitoring | === Transaction Monitoring Agent: END ===
+
+14:19:14 | INFO     | fraud_detection.core.graph | Fast-path: transaction TXN-2026-0009 is clean -- setting defaults and skipping to compliance
+14:19:14 | INFO     | fraud_detection.agents.compliance | === Compliance Logging Agent: START ===
+14:19:14 | INFO     | fraud_detection.agents.compliance |   Generated audit entry: AUDIT-DC38E277ED99
+14:19:14 | INFO     | fraud_detection.agents.compliance |   Generated action log: ACTION-95A747A1CE27
+14:19:14 | INFO     | fraud_detection.agents.compliance |   SAR not required (risk_score=0.0 < threshold=70.0)
+14:19:14 | INFO     | fraud_detection.agents.compliance | Transaction TXN-2026-0009: 2 compliance entries generated
+14:19:14 | INFO     | fraud_detection.agents.compliance | === Compliance Logging Agent: END ===
+
+
+================================================================================
+RESULT SUMMARY: TXN-2026-0009
+
+--------------------------------------------------------------------------------
+  Risk Score:  0.0/100
+  Breakdown:   anomaly=0.0  pattern=0.0  historical=0.0  velocity=0.0  model=0.0
+  Action:      ALLOW
+  Reason:      No anomalies detected -- fast-path clean transaction
+  Notified:    none
+  Anomalies:   0 flag(s)
+  Patterns:    0 detected
+  Compliance:  2 log entries
+    - [PIPELINE_AUDIT] AUDIT-DC38E277ED99
+      Run RUN-CAF69528 | Transaction TXN-2026-0009 | Amount: $18.75 | Risk: 0.0/100 | Action: ALLOW | Flags: [none] | Patterns...
+    - [TRANSACTION_ALLOWED] ACTION-95A747A1CE27
+      Run RUN-CAF69528 | Action 'ALLOW' executed on transaction TXN-2026-0009 | Reason: No anomalies detected -- fast-path cle...
+
+================================================================================
+
+################################################################################
+  PROCESSING TRANSACTION 10/10: TXN-2026-0010
+  Amount: $4,500.00 | Type: transfer | Channel: online
+
+################################################################################
+14:19:14 | INFO     | fraud_detection.agents.monitoring | === Transaction Monitoring Agent: START ===
+14:19:14 | INFO     | fraud_detection.agents.monitoring | Processing transaction TXN-2026-0010 | amount=$4,500.00
+14:19:14 | INFO     | fraud_detection.agents.monitoring | Transaction TXN-2026-0010: 2 anomalies detected | is_anomalous=True
+14:19:14 | INFO     | fraud_detection.agents.monitoring |   [MEDIUM] geo_anomaly: Transaction from potentially risky location: Foreign - Dubai AE
+14:19:14 | INFO     | fraud_detection.agents.monitoring |   [MEDIUM] new_device: Transaction from previously unseen device: NEW_DEV-M3N4O5
+14:19:14 | INFO     | fraud_detection.agents.monitoring | === Transaction Monitoring Agent: END ===
+
+14:19:14 | INFO     | fraud_detection.agents.pattern_detection | === Pattern Detection Agent: START ===
+14:19:14 | INFO     | fraud_detection.agents.pattern_detection | Analysing transaction TXN-2026-0010 with 2 upstream anomaly flags
+14:19:14 | ERROR    | fraud_detection.core.neo4j_client | Neo4j connectivity check failed: {neo4j_code: Neo.ClientError.Security.Unauthorized} {message: Unsupported authentication token, missing key `credentials`} {gql_status: 42NFF} {gql_status_description: error: syntax error or access rule violation - permission/access denied. Access denied, see the security logs for details.}
+14:19:14 | INFO     | fraud_detection.agents.pattern_detection | Using heuristic pattern detectors (Neo4j unavailable)
+14:19:14 | INFO     | fraud_detection.agents.pattern_detection | Transaction TXN-2026-0010: 1 patterns detected
+14:19:14 | INFO     | fraud_detection.agents.pattern_detection |   [NETWORK] mule_network_candidate: Large transfer of $4,500.00 to ACCT-OFFSHORE-9911 -- potential mule network relay (confidence=0.55)
+14:19:14 | INFO     | fraud_detection.agents.pattern_detection | === Pattern Detection Agent: END ===
+
+14:19:14 | INFO     | fraud_detection.agents.risk_assessment | === Risk Assessment Agent: START ===
+14:19:14 | INFO     | fraud_detection.agents.risk_assessment | Transaction TXN-2026-0010: RISK SCORE = 47.03/100
+14:19:14 | INFO     | fraud_detection.agents.risk_assessment |   Breakdown: anomaly=32.5 pattern=57.2 historical=35.0 velocity=45.0 model=65.0
+14:19:14 | INFO     | fraud_detection.agents.risk_assessment |   Weights:   anomaly=0.25 pattern=0.3 historical=0.15 velocity=0.15 model=0.15
+14:19:14 | INFO     | fraud_detection.agents.risk_assessment | === Risk Assessment Agent: END ===
+
+14:19:14 | INFO     | fraud_detection.agents.alert_block | === Alert / Block Agent: START ===
+14:19:14 | INFO     | fraud_detection.agents.alert_block | FLAGGING transaction TXN-2026-0010 (risk=47.03)
+14:19:14 | INFO     | fraud_detection.agents.alert_block | Transaction TXN-2026-0010: ACTION = FLAG | reason = Risk score 47.03 >= flag threshold 40.0
+14:19:14 | INFO     | fraud_detection.agents.alert_block |   Notified: fraud_ops
+14:19:14 | INFO     | fraud_detection.agents.alert_block | === Alert / Block Agent: END ===
+
+14:19:14 | INFO     | fraud_detection.agents.compliance | === Compliance Logging Agent: START ===
+14:19:14 | INFO     | fraud_detection.agents.compliance |   Generated audit entry: AUDIT-F138560653E9
+14:19:14 | INFO     | fraud_detection.agents.compliance |   Generated action log: ACTION-643F00C71673
+14:19:14 | INFO     | fraud_detection.agents.compliance |   SAR not required (risk_score=47.03 < threshold=70.0)
+14:19:14 | INFO     | fraud_detection.agents.compliance | Transaction TXN-2026-0010: 2 compliance entries generated
+14:19:14 | INFO     | fraud_detection.agents.compliance | === Compliance Logging Agent: END ===
+
+
+================================================================================
+RESULT SUMMARY: TXN-2026-0010
+
+--------------------------------------------------------------------------------
+  Risk Score:  47.03/100
+  Breakdown:   anomaly=32.5  pattern=57.2  historical=35.0  velocity=45.0  model=65.0
+  Action:      FLAG
+  Reason:      Risk score 47.03 >= flag threshold 40.0
+  Notified:    fraud_ops
+  Anomalies:   2 flag(s)
+    - [MEDIUM] geo_anomaly: Transaction from potentially risky location: Foreign - Dubai AE
+    - [MEDIUM] new_device: Transaction from previously unseen device: NEW_DEV-M3N4O5
+  Patterns:    1 detected
+    - [NETWORK] mule_network_candidate: Large transfer of $4,500.00 to ACCT-OFFSHORE-9911 -- potential mule network relay
+  Compliance:  2 log entries
+    - [PIPELINE_AUDIT] AUDIT-F138560653E9
+      Run RUN-912E088C | Transaction TXN-2026-0010 | Amount: $4,500.00 | Risk: 47.03/100 | Action: FLAG | Flags: [geo_anomaly,...
+    - [TRANSACTION_FLAGGED] ACTION-643F00C71673
+      Run RUN-912E088C | Action 'FLAG' executed on transaction TXN-2026-0010 | Reason: Risk score 47.03 >= flag threshold 40.0...
+
+================================================================================
+
+********************************************************************************
+  BATCH SUMMARY  (source: /home/manichandra/developer/FraudDetective/data/sample_transactions.csv)
+
+********************************************************************************
+  Transaction                          Amount     Risk     Action
+  ------------------------------ ------------ -------- ----------
+  TXN-2026-0001                  $     42.50     0.0      ALLOW
+  TXN-2026-0002                  $ 15,750.00    57.5       FLAG
+  TXN-2026-0003                  $  9,400.00    42.5       FLAG
+  TXN-2026-0004                  $    890.00    23.0      ALLOW
+  TXN-2026-0005                  $  3,200.00     0.0      ALLOW
+  TXN-2026-0006                  $  9,950.00    45.1       FLAG
+  TXN-2026-0007                  $  9,800.00    45.0       FLAG
+  TXN-2026-0008                  $ 22,000.00    58.8       FLAG
+  TXN-2026-0009                  $     18.75     0.0      ALLOW
+  TXN-2026-0010                  $  4,500.00    47.0       FLAG
+
+********************************************************************************
+14:19:14 | INFO     | FraudDetective | Pipeline execution complete.
