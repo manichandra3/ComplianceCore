@@ -17,7 +17,7 @@ Architecture note:
 from __future__ import annotations
 
 import operator
-from typing import Annotated, Any, TypedDict
+from typing import Annotated, Any, TypedDict, NotRequired
 
 
 # ---------------------------------------------------------------------------
@@ -70,12 +70,6 @@ class RiskBreakdown(TypedDict):
     historical_score: float        # contribution from account history
     velocity_score: float          # contribution from transaction velocity
     model_score: float             # contribution from ML model prediction
-    # ── FUTURE: Reinforcement Learning ────────────────────────────────
-    # rl_adjustment: float         # RL agent's real-time score adjustment
-    #     Will be populated once the RL reward model is integrated.
-    #     The RL module will learn optimal score adjustments by observing
-    #     downstream outcomes (confirmed fraud vs. false positives).
-    # ------------------------------------------------------------------
 
 
 class ActionResult(TypedDict):
@@ -99,7 +93,7 @@ class ComplianceEntry(TypedDict):
 # Top-level pipeline state -- this is what LangGraph passes node-to-node
 # ---------------------------------------------------------------------------
 
-class FraudDetectionState(TypedDict, total=False):
+class FraudDetectionState(TypedDict):
     """
     Master state flowing through the LangGraph pipeline.
 
@@ -117,24 +111,16 @@ class FraudDetectionState(TypedDict, total=False):
 
     # ── Ingest ────────────────────────────────────────────────────────
     raw_transaction: TransactionData
-
-    # ── Monitoring outputs ────────────────────────────────────────────
-    anomaly_flags: Annotated[list[AnomalyFlag], operator.add]
-    is_anomalous: bool
-
-    # ── Pattern Detection outputs ─────────────────────────────────────
-    detected_patterns: Annotated[list[DetectedPattern], operator.add]
-
-    # ── Risk Assessment outputs ───────────────────────────────────────
-    risk_score: float              # 0 - 100 composite score
-    risk_breakdown: RiskBreakdown
-
-    # ── Alert/Block outputs ───────────────────────────────────────────
-    action_taken: ActionResult
-
-    # ── Compliance outputs ────────────────────────────────────────────
-    compliance_logs: Annotated[list[ComplianceEntry], operator.add]
-
-    # ── Pipeline metadata ─────────────────────────────────────────────
     pipeline_run_id: str           # unique ID for this execution
-    processing_errors: Annotated[list[str], operator.add]
+
+    # ── Outputs populated during pipeline execution ───────────────────
+    is_anomalous: NotRequired[bool]
+    risk_score: NotRequired[float]              # 0 - 100 composite score
+    risk_breakdown: NotRequired[RiskBreakdown]
+    action_taken: NotRequired[ActionResult]
+
+    # Append-only fields
+    anomaly_flags: NotRequired[Annotated[list[AnomalyFlag], operator.add]]
+    detected_patterns: NotRequired[Annotated[list[DetectedPattern], operator.add]]
+    compliance_logs: NotRequired[Annotated[list[ComplianceEntry], operator.add]]
+    processing_errors: NotRequired[Annotated[list[str], operator.add]]
