@@ -28,7 +28,14 @@ from typing import Any
 
 from fraud_detection.config.settings import (
     MIN_PATTERN_CONFIDENCE,
+    MULE_FAN_IN_MIN_SENDERS,
+    MULE_FAN_IN_WINDOW_DAYS,
+    MULE_HEURISTIC_MIN_AMOUNT,
+    STRUCTURING_HEURISTIC_RATIO,
+    STRUCTURING_MIN_AMOUNT,
+    STRUCTURING_MIN_TXNS,
     STRUCTURING_THRESHOLD,
+    STRUCTURING_WINDOW_DAYS,
     STRUCTURING_WINDOW_HOURS,
 )
 from fraud_detection.core.state import DetectedPattern, FraudDetectionState
@@ -66,17 +73,17 @@ class PatternDetectionAgent:
     QUERY_MULE_FAN_IN: str = (
         "MATCH (beneficiary:Account)<-[:TO]-(t:Transaction)<-[:SENDS]-(sender:Account) "
         "WHERE id(beneficiary) = $beneficiary_id "
-        "  AND t.timestamp > datetime() - duration('P1D') "
+        "  AND t.timestamp > datetime() - duration($window_days) "
         "WITH beneficiary, count(DISTINCT sender) AS distinct_senders "
-        "RETURN distinct_senders > 5 AS is_mule"
+        "RETURN distinct_senders > $min_senders AS is_mule"
     )
 
     QUERY_STRUCTURING: str = (
         "MATCH (sender:Account)-[:SENDS]->(t:Transaction) "
         "WHERE id(sender) = $sender_id "
-        "  AND t.amount > 9000 AND t.amount < 10000 "
-        "  AND t.timestamp > datetime() - duration('P7D') "
-        "RETURN count(t) > 2 AS is_structuring"
+        "  AND t.amount > $min_amount AND t.amount < $max_amount "
+        "  AND t.timestamp > datetime() - duration($window_days) "
+        "RETURN count(t) > $min_txns AS is_structuring"
     )
 
     QUERY_IDENTITY_RING: str = (
@@ -117,7 +124,11 @@ class PatternDetectionAgent:
             result = self._safe_query(
                 "mule_fan_in",
                 self.QUERY_MULE_FAN_IN,
-                {"beneficiary_id": recipient_account_id},
+                {
+                    "beneficiary_id": recipient_account_id,
+                    "window_days": f"P{MULE_FAN_IN_WINDOW_DAYS}D",
+                    "min_senders": MULE_FAN_IN_MIN_SENDERS,
+                },
                 errors,
             )
             if result and result.get("is_mule"):
@@ -127,7 +138,13 @@ class PatternDetectionAgent:
         result = self._safe_query(
             "structuring",
             self.QUERY_STRUCTURING,
-            {"sender_id": sender_account_id},
+            {
+                "sender_id": sender_account_id,
+                "min_amount": STRUCTURING_MIN_AMOUNT,
+                "max_amount": STRUCTURING_THRESHOLD,
+                "window_days": f"P{STRUCTURING_WINDOW_DAYS}D",
+                "min_txns": STRUCTURING_MIN_TXNS,
+            },
             errors,
         )
         if result and result.get("is_structuring"):
@@ -168,7 +185,14 @@ class PatternDetectionAgent:
                 return records[0]
             return None
         except Exception as exc:
-            msg = f"Neo4j query '{query_name}' failed: {exc}"
+            import neo4j
+            if isinstance(exc, neo4j.exceptions.Neo4jError):
+                msg = f"Neo4j Cypher error in '{query_name}': {exc}"
+            elif isinstance(exc, neo4j.exceptions.ServiceUnavailable):
+                msg = f"Neo4j connection error in '{query_name}': {exc}"
+            else:
+                raise exc  # Re-raise unexpected exceptions like KeyError
+            
             logger.error(msg)
             errors.append(msg)
             return None
@@ -198,7 +222,7 @@ def _detect_structuring(txn: dict[str, Any]) -> DetectedPattern | None:
     """
     amount = txn.get("amount", 0.0)
     # Naive heuristic: single txn just below threshold looks suspicious
-    if STRUCTURING_THRESHOLD * 0.8 <= amount < STRUCTURING_THRESHOLD:
+    if STRUCTURING_THRESHOLD * STRUCTURING_HEURISTIC_RATIO <= amount < STRUCTURING_THRESHOLD:
         return DetectedPattern(
             pattern_id="structuring_suspect",
             pattern_type="sequence",
@@ -218,21 +242,13 @@ def _detect_mule_network(txn: dict[str, Any]) -> DetectedPattern | None:
 
     This placeholder flags large transfers to any recipient. The graph-based
     query (PatternDetectionAgent) uses fan-in analysis for accurate detection.
-
-    # ── FUTURE: LLM-Assisted Pattern Interpretation ──────────────────
-    # After Neo4j returns candidate subgraphs, pass them to an LLM for
-    # natural-language interpretation and confidence scoring:
-    #   explanation = llm.invoke(
-    #       "Analyse this transaction subgraph for mule activity: {subgraph}"
-    #   )
-    # ------------------------------------------------------------------
     """
     txn_type = txn.get("transaction_type", "")
     amount = txn.get("amount", 0.0)
     recipient = txn.get("recipient_account", "")
 
     # Placeholder: flag large transfers to unfamiliar recipients
-    if txn_type == "transfer" and amount > 3_000 and recipient:
+    if txn_type == "transfer" and amount > MULE_HEURISTIC_MIN_AMOUNT and recipient:
         return DetectedPattern(
             pattern_id="mule_network_candidate",
             pattern_type="network",
@@ -351,7 +367,7 @@ def _neo4j_results_to_patterns(
 # LangGraph node function
 # ---------------------------------------------------------------------------
 
-def pattern_detection_agent(state: FraudDetectionState) -> dict:
+def pattern_detection_agent(state: FraudDetectionState) -> dict[str, Any]:
     """
     LangGraph node: Pattern Detection Agent.
 
@@ -369,19 +385,14 @@ def pattern_detection_agent(state: FraudDetectionState) -> dict:
         1. Attempt Neo4j graph-based detection first (PatternDetectionAgent)
         2. If Neo4j is unavailable, fall back to heuristic detectors
         3. Both paths populate the same DetectedPattern output format
-
-    # ── FUTURE: Full LLM Pipeline ─────────────────────────────────────
-    # 1. Pass candidate patterns to the LLM for interpretation
-    # 2. Merge LLM-generated patterns with rule-based detections
-    # ------------------------------------------------------------------
     """
-    logger.info("=== Pattern Detection Agent: START ===")
+    logger.debug("=== Pattern Detection Agent: START ===")
 
     txn = state.get("raw_transaction", {})
     flags = state.get("anomaly_flags", [])
     txn_id = txn.get("transaction_id", "UNKNOWN")
 
-    logger.info(
+    logger.debug(
         f"Analysing transaction {txn_id} with {len(flags)} upstream anomaly flags"
     )
 
@@ -410,18 +421,22 @@ def pattern_detection_agent(state: FraudDetectionState) -> dict:
                     patterns.append(p)
             errors.extend(neo4j_result.get("errors", []))
             used_neo4j = True
-            logger.info(
+            logger.debug(
                 f"Neo4j detection found {len(graph_patterns)} patterns "
                 f"(risk_contribution={neo4j_result.get('risk_contribution', 0)})"
             )
         except Exception as exc:
-            msg = f"Neo4j pattern detection failed, falling back to heuristics: {exc}"
-            logger.warning(msg)
-            errors.append(msg)
+            import neo4j
+            if isinstance(exc, (neo4j.exceptions.Neo4jError, neo4j.exceptions.ServiceUnavailable)):
+                msg = f"Neo4j pattern detection failed, falling back to heuristics: {exc}"
+                logger.warning(msg)
+                errors.append(msg)
+            else:
+                raise exc
 
     # --- Heuristic fallback (always runs if Neo4j was unavailable) --------
     if not used_neo4j:
-        logger.info("Using heuristic pattern detectors (Neo4j unavailable)")
+        logger.debug("Using heuristic pattern detectors (Neo4j unavailable)")
         for detector in [
             _detect_structuring,
             _detect_mule_network,
@@ -436,13 +451,13 @@ def pattern_detection_agent(state: FraudDetectionState) -> dict:
                 logger.error(msg)
                 errors.append(msg)
 
-    logger.info(f"Transaction {txn_id}: {len(patterns)} patterns detected")
+    logger.debug(f"Transaction {txn_id}: {len(patterns)} patterns detected")
     for pat in patterns:
-        logger.info(
+        logger.debug(
             f"  [{pat['pattern_type'].upper()}] {pat['pattern_id']}: "
             f"{pat['description']} (confidence={pat['confidence']:.2f})"
         )
 
-    logger.info("=== Pattern Detection Agent: END ===\n")
+    logger.debug("=== Pattern Detection Agent: END ===\n")
 
     return {"detected_patterns": patterns, "processing_errors": errors}

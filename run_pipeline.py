@@ -320,15 +320,6 @@ def main() -> None:
 
     _print_separator("*", 80)
 
-    # ── FUTURE: Stream to Kafka / Event Bus ──────────────────────────
-    # In production, results would be published to a Kafka topic:
-    #   for result in results:
-    #       kafka_producer.send("fraud.pipeline.results",
-    #                           value=json.dumps(result))
-    # Downstream consumers (dashboards, case management, BI) subscribe
-    # to this topic for real-time updates.
-    # ------------------------------------------------------------------
-
     logger.info("Pipeline execution complete.")
 
 

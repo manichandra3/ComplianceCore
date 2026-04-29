@@ -62,36 +62,7 @@ def _generate_audit_entry(state: FraudDetectionState) -> ComplianceEntry:
 
 
 def _generate_sar_draft(state: FraudDetectionState) -> ComplianceEntry | None:
-    """Auto-draft a Suspicious Activity Report if risk exceeds SAR threshold.
-
-    # ── FUTURE: LLM-Generated SAR Narrative ──────────────────────────
-    # FinCEN SARs require a detailed narrative section.  Use an LLM to
-    # draft this automatically:
-    #   from langchain_core.prompts import ChatPromptTemplate
-    #   sar_prompt = ChatPromptTemplate.from_messages([
-    #       ("system", "You are a BSA/AML compliance officer..."),
-    #       ("human", "Draft a SAR narrative for: {transaction_summary}")
-    #   ])
-    #   narrative = (sar_prompt | llm | StrOutputParser()).invoke({
-    #       "transaction_summary": build_summary(state)
-    #   })
-    #
-    # The LLM-generated narrative will include:
-    #   - Description of suspicious activity
-    #   - How it was detected (rules, patterns, ML signals)
-    #   - Involved parties and accounts
-    #   - Estimated exposure amount
-    #   - Recommended next steps
-    # ------------------------------------------------------------------
-
-    # ── FUTURE: Neo4j Relationship Context ───────────────────────────
-    # Enrich the SAR with relationship data from Neo4j:
-    #   MATCH (a:Account {id: $account_id})-[r*1..3]-(related)
-    #   RETURN related, type(r), labels(related)
-    # This provides the "associated accounts and entities" section of
-    # the SAR filing.
-    # ------------------------------------------------------------------
-    """
+    """Auto-draft a Suspicious Activity Report if risk exceeds SAR threshold."""
     risk_score = state.get("risk_score", 0.0)
 
     if risk_score < SAR_THRESHOLD:
@@ -177,7 +148,7 @@ def compliance_logging_agent(state: FraudDetectionState) -> dict:
     This is the terminal node.  Its output completes the pipeline state
     that is returned to the caller.
     """
-    logger.info("=== Compliance Logging Agent: START ===")
+    logger.debug("=== Compliance Logging Agent: START ===")
 
     txn = state.get("raw_transaction", {})
     txn_id = txn.get("transaction_id", "UNKNOWN")
@@ -188,12 +159,12 @@ def compliance_logging_agent(state: FraudDetectionState) -> dict:
     # 1. Always generate an audit trail entry
     audit_entry = _generate_audit_entry(state)
     logs.append(audit_entry)
-    logger.info(f"  Generated audit entry: {audit_entry['log_id']}")
+    logger.debug(f"  Generated audit entry: {audit_entry['log_id']}")
 
     # 2. Always log the action taken
     action_log = _generate_action_log(state)
     logs.append(action_log)
-    logger.info(f"  Generated action log: {action_log['log_id']}")
+    logger.debug(f"  Generated action log: {action_log['log_id']}")
 
     # 3. Auto-draft SAR if risk is high enough
     sar = _generate_sar_draft(state)
@@ -204,9 +175,9 @@ def compliance_logging_agent(state: FraudDetectionState) -> dict:
             f"(risk_score={risk_score})"
         )
     else:
-        logger.info(f"  SAR not required (risk_score={risk_score} < threshold={SAR_THRESHOLD})")
+        logger.debug(f"  SAR not required (risk_score={risk_score} < threshold={SAR_THRESHOLD})")
 
-    logger.info(f"Transaction {txn_id}: {len(logs)} compliance entries generated")
-    logger.info("=== Compliance Logging Agent: END ===\n")
+    logger.debug(f"Transaction {txn_id}: {len(logs)} compliance entries generated")
+    logger.debug("=== Compliance Logging Agent: END ===\n")
 
     return {"compliance_logs": logs}

@@ -28,7 +28,14 @@ GEO_VELOCITY_MAX_KMH: float = 900.0   # impossible travel speed (km/h)
 # Pattern Detection thresholds
 # ---------------------------------------------------------------------------
 STRUCTURING_THRESHOLD: float = 10_000.0   # BSA/AML structuring boundary
+STRUCTURING_MIN_AMOUNT: float = 9000.0
+STRUCTURING_HEURISTIC_RATIO: float = 0.8  # e.g., 0.8 means 80% of threshold
+STRUCTURING_MIN_TXNS: int = 2
 STRUCTURING_WINDOW_HOURS: int = 24
+STRUCTURING_WINDOW_DAYS: int = 7
+MULE_FAN_IN_MIN_SENDERS: int = 5
+MULE_FAN_IN_WINDOW_DAYS: int = 1
+MULE_HEURISTIC_MIN_AMOUNT: float = 3000.0
 MIN_PATTERN_CONFIDENCE: float = 0.5       # ignore patterns below this
 
 # ---------------------------------------------------------------------------
@@ -46,21 +53,8 @@ WEIGHT_MODEL: float = 0.15
 SAR_THRESHOLD: float = 70.0    # auto-generate SAR draft above this score
 
 # ---------------------------------------------------------------------------
-# Future integration placeholders
+# Neo4j Graph Database
 # ---------------------------------------------------------------------------
-
-# ── LLM Configuration ────────────────────────────────────────────────
-# LLM_PROVIDER = "openai"              # or "anthropic", "azure_openai"
-# LLM_MODEL = "gpt-4o"
-# LLM_TEMPERATURE = 0.0                # deterministic for fraud decisions
-# LLM_MAX_TOKENS = 2048
-#
-# The LLM will be used by:
-#   - Pattern Detection Agent: to interpret novel/ambiguous patterns
-#   - Risk Assessment Agent: to generate natural-language risk narratives
-#   - Compliance Agent: to draft SAR narrative sections
-
-# ── Neo4j Graph Database ─────────────────────────────────────────────
 NEO4J_URI: str = os.environ.get("NEO4J_URI", "bolt://localhost:7687")
 NEO4J_USER: str = os.environ.get("NEO4J_USER", "neo4j")
 NEO4J_PASSWORD: str = os.environ.get("NEO4J_PASSWORD", "")
@@ -76,12 +70,3 @@ NEO4J_CONNECTION_TIMEOUT: float = float(
 #   - Pattern Detection Agent: entity-relationship traversal to find
 #     mule networks, shared device fingerprints, account clusters
 #   - Risk Assessment Agent: pull historical risk sub-graph per entity
-
-# ── Reinforcement Learning ───────────────────────────────────────────
-# RL_MODEL_PATH = "models/rl_fraud_agent_v1.pt"
-# RL_ACTION_SPACE = ["allow", "flag", "hold", "block"]
-# RL_REWARD_DECAY = 0.99
-#
-# The RL module will be used by:
-#   - Risk Assessment Agent: dynamic score adjustment
-#   - Alert/Block Agent: learn optimal action selection from outcomes
