@@ -70,3 +70,76 @@ NEO4J_CONNECTION_TIMEOUT: float = float(
 #   - Pattern Detection Agent: entity-relationship traversal to find
 #     mule networks, shared device fingerprints, account clusters
 #   - Risk Assessment Agent: pull historical risk sub-graph per entity
+
+# ---------------------------------------------------------------------------
+# Cold-start / new-user detection
+# ---------------------------------------------------------------------------
+COLD_START_TXN_THRESHOLD: int = 15   # accounts with fewer txns are "new"
+
+# ---------------------------------------------------------------------------
+# Velocity  (Redis-based sliding window)
+# ---------------------------------------------------------------------------
+VELOCITY_WINDOW_MINUTES: int = 10    # sliding window length in minutes
+VELOCITY_MAX_TRANSFERS: int = 5      # flag after this many txns in the window
+
+# ---------------------------------------------------------------------------
+# Statistical anomaly (z-score)
+# ---------------------------------------------------------------------------
+ZSCORE_ALERT_THRESHOLD: float = 3.0  # flag when (amount - μ) / σ > this
+
+# ---------------------------------------------------------------------------
+# Cohort-based static thresholds  (fallback for new users with no μ/σ)
+# ---------------------------------------------------------------------------
+COHORT_AMOUNT_THRESHOLDS: dict[str, float] = {
+    "retail_low":  2_000.0,
+    "retail_high": 15_000.0,
+    "business":    50_000.0,
+    "unknown":     5_000.0,   # conservative default
+}
+
+# ---------------------------------------------------------------------------
+# Redis  (velocity counter store)
+# ---------------------------------------------------------------------------
+REDIS_HOST: str = os.environ.get("REDIS_HOST", "localhost")
+REDIS_PORT: int = int(os.environ.get("REDIS_PORT", "6379"))
+REDIS_DB: int = int(os.environ.get("REDIS_DB", "0"))
+REDIS_PASSWORD: str = os.environ.get("REDIS_PASSWORD", "")
+REDIS_SOCKET_TIMEOUT: float = 2.0
+
+# ---------------------------------------------------------------------------
+# DynamoDB  (user statistical baseline store)
+# ---------------------------------------------------------------------------
+DYNAMO_TABLE_USER_PROFILES: str = os.environ.get(
+    "DYNAMO_TABLE_USER_PROFILES", "fraud_user_profiles"
+)
+DYNAMO_REGION: str = os.environ.get("AWS_REGION", "us-east-1")
+
+# ---------------------------------------------------------------------------
+# Kafka / SQS  (feedback loop event bus)
+# ---------------------------------------------------------------------------
+KAFKA_BROKER: str = os.environ.get("KAFKA_BROKER", "localhost:9092")
+KAFKA_TOPIC_ALLOWED_TXN: str = os.environ.get(
+    "KAFKA_TOPIC_ALLOWED_TXN", "fraud.txn.allowed"
+)
+KAFKA_PRODUCER_TIMEOUT: float = 5.0
+SQS_QUEUE_URL: str = os.environ.get("SQS_QUEUE_URL", "")
+
+# ---------------------------------------------------------------------------
+# Adaptive risk weights — NEW USER  (txn_count < COLD_START_TXN_THRESHOLD)
+# No reliable personal history → lean on graph patterns and velocity signals
+# ---------------------------------------------------------------------------
+WEIGHT_ANOMALY_NEW_USER: float    = 0.15
+WEIGHT_PATTERN_NEW_USER: float    = 0.40
+WEIGHT_HISTORICAL_NEW_USER: float = 0.05
+WEIGHT_VELOCITY_NEW_USER: float   = 0.25
+WEIGHT_MODEL_NEW_USER: float      = 0.15
+
+# ---------------------------------------------------------------------------
+# Adaptive risk weights — ESTABLISHED USER  (txn_count >= threshold)
+# Rich personal history → z-score anomaly is the dominant signal
+# ---------------------------------------------------------------------------
+WEIGHT_ANOMALY_ESTABLISHED: float    = 0.35
+WEIGHT_PATTERN_ESTABLISHED: float    = 0.25
+WEIGHT_HISTORICAL_ESTABLISHED: float = 0.15
+WEIGHT_VELOCITY_ESTABLISHED: float   = 0.10
+WEIGHT_MODEL_ESTABLISHED: float      = 0.15

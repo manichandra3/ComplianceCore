@@ -22,10 +22,20 @@ from typing import Any
 
 from fraud_detection.config.settings import (
     WEIGHT_ANOMALY,
+    WEIGHT_ANOMALY_ESTABLISHED,
+    WEIGHT_ANOMALY_NEW_USER,
     WEIGHT_HISTORICAL,
+    WEIGHT_HISTORICAL_ESTABLISHED,
+    WEIGHT_HISTORICAL_NEW_USER,
     WEIGHT_MODEL,
+    WEIGHT_MODEL_ESTABLISHED,
+    WEIGHT_MODEL_NEW_USER,
     WEIGHT_PATTERN,
+    WEIGHT_PATTERN_ESTABLISHED,
+    WEIGHT_PATTERN_NEW_USER,
     WEIGHT_VELOCITY,
+    WEIGHT_VELOCITY_ESTABLISHED,
+    WEIGHT_VELOCITY_NEW_USER,
 )
 from fraud_detection.core.state import FraudDetectionState, RiskBreakdown
 
@@ -201,17 +211,38 @@ def risk_assessment_agent(state: FraudDetectionState) -> dict:
     # surfaced to fraud analysts in the case management UI.
     # ------------------------------------------------------------------
     """
-    logger.info("=== Risk Assessment Agent: START ===")
+    logger.info("=== Risk Assessment Agent (Check 3): START ===")
 
     txn = state.get("raw_transaction", {})
     flags = state.get("anomaly_flags", [])
     patterns = state.get("detected_patterns", [])
+    is_new_user: bool = state.get("is_new_user", True)  # conservative default
     txn_id = txn.get("transaction_id", "UNKNOWN")
 
     # Cast TypedDicts to plain dicts for helper compatibility
     txn_dict: dict[str, Any] = dict(txn)
     flags_list: list[dict[str, Any]] = [dict(f) for f in flags]
     patterns_list: list[dict[str, Any]] = [dict(p) for p in patterns]
+
+    # ------------------------------------------------------------------
+    # Adaptive weights based on user maturity
+    # New user:         no reliable μ/σ → lean on graph + velocity signals
+    # Established user: rich personal baseline → lean on z-score anomaly
+    # ------------------------------------------------------------------
+    if is_new_user:
+        w_anomaly    = WEIGHT_ANOMALY_NEW_USER
+        w_pattern    = WEIGHT_PATTERN_NEW_USER
+        w_historical = WEIGHT_HISTORICAL_NEW_USER
+        w_velocity   = WEIGHT_VELOCITY_NEW_USER
+        w_model      = WEIGHT_MODEL_NEW_USER
+        weight_label = "new_user"
+    else:
+        w_anomaly    = WEIGHT_ANOMALY_ESTABLISHED
+        w_pattern    = WEIGHT_PATTERN_ESTABLISHED
+        w_historical = WEIGHT_HISTORICAL_ESTABLISHED
+        w_velocity   = WEIGHT_VELOCITY_ESTABLISHED
+        w_model      = WEIGHT_MODEL_ESTABLISHED
+        weight_label = "established"
 
     # Compute component scores
     anomaly_score = _score_anomalies(flags_list)
@@ -222,11 +253,11 @@ def risk_assessment_agent(state: FraudDetectionState) -> dict:
 
     # Weighted composite
     risk_score = (
-        WEIGHT_ANOMALY * anomaly_score
-        + WEIGHT_PATTERN * pattern_score
-        + WEIGHT_HISTORICAL * historical_score
-        + WEIGHT_VELOCITY * velocity_score
-        + WEIGHT_MODEL * model_score
+        w_anomaly    * anomaly_score
+        + w_pattern    * pattern_score
+        + w_historical * historical_score
+        + w_velocity   * velocity_score
+        + w_model      * model_score
     )
     risk_score = round(min(max(risk_score, 0.0), 100.0), 2)
 
@@ -238,15 +269,15 @@ def risk_assessment_agent(state: FraudDetectionState) -> dict:
         model_score=round(model_score, 2),
     )
 
-    logger.info(f"Transaction {txn_id}: RISK SCORE = {risk_score}/100")
+    logger.info(f"Transaction {txn_id}: RISK SCORE = {risk_score}/100 [{weight_label} weights]")
     logger.info(f"  Breakdown: anomaly={anomaly_score:.1f} pattern={pattern_score:.1f} "
                 f"historical={historical_score:.1f} velocity={velocity_score:.1f} "
                 f"model={model_score:.1f}")
-    logger.info(f"  Weights:   anomaly={WEIGHT_ANOMALY} pattern={WEIGHT_PATTERN} "
-                f"historical={WEIGHT_HISTORICAL} velocity={WEIGHT_VELOCITY} "
-                f"model={WEIGHT_MODEL}")
+    logger.info(f"  Weights:   anomaly={w_anomaly} pattern={w_pattern} "
+                f"historical={w_historical} velocity={w_velocity} "
+                f"model={w_model}")
 
-    logger.info("=== Risk Assessment Agent: END ===\n")
+    logger.info("=== Risk Assessment Agent (Check 3): END ===\n")
 
     return {
         "risk_score": risk_score,

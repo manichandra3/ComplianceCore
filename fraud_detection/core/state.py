@@ -45,6 +45,22 @@ class TransactionData(TypedDict, total=False):
     metadata: dict[str, Any]       # catch-all for gateway-specific fields
 
 
+class UserProfile(TypedDict, total=False):
+    """Statistical baseline for a user fetched from DynamoDB.
+
+    Populated by the Transaction Monitoring Agent on every request.
+    Written by the async feedback worker after each allowed transaction
+    (triggered via Kafka/SQS broadcast from the Compliance Agent).
+    """
+
+    account_id: str
+    txn_count: int       # total historical transactions processed
+    amount_mean: float   # running mean of transaction amounts (μ)
+    amount_std: float    # running std dev of transaction amounts (σ)
+    cohort: str          # "retail_low" | "retail_high" | "business" | "unknown"
+    last_updated: str    # ISO-8601
+
+
 class AnomalyFlag(TypedDict):
     """Single anomaly surfaced by the Transaction Monitoring Agent."""
     rule_id: str                   # e.g. "velocity_check", "geo_anomaly"
@@ -118,6 +134,15 @@ class FraudDetectionState(TypedDict):
     risk_score: NotRequired[float]              # 0 - 100 composite score
     risk_breakdown: NotRequired[RiskBreakdown]
     action_taken: NotRequired[ActionResult]
+
+    # ── Monitoring Agent enrichment ───────────────────────────────────
+    user_profile: NotRequired[UserProfile]      # fetched from DynamoDB
+    is_new_user: NotRequired[bool]              # txn_count < cold-start threshold
+    z_score: NotRequired[float | None]          # (amount - μ) / σ; None if new user
+    velocity_count: NotRequired[int]            # txns in current Redis window
+
+    # ── Compliance Agent feedback ─────────────────────────────────────
+    kafka_event_published: NotRequired[bool]    # True if feedback event was broadcast
 
     # Append-only fields
     anomaly_flags: NotRequired[Annotated[list[AnomalyFlag], operator.add]]

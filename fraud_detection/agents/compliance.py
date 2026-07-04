@@ -1,19 +1,24 @@
 """
-Compliance Logging Agent
-========================
+Compliance Logging Agent  (Check 5 — The Reporter & Broadcaster)
+================================================================
 
 Pipeline position: **Node 5** (terminal node)
 
 Responsibility:
-    - Generate a complete audit trail for every transaction processed
-    - Auto-draft Suspicious Activity Reports (SARs) when risk exceeds
-      the SAR threshold
-    - Produce structured compliance log entries referencing applicable
-      regulations (BSA/AML, OFAC, PCI-DSS, etc.)
-    - Write `compliance_logs` into state
+    1. Audit trail   — versioned LangGraph state written to storage for
+                       regulators; every decision is fully explainable.
+    2. SAR generation — auto-draft Suspicious Activity Reports when
+                        risk_score >= SAR_THRESHOLD.
+    3. Kafka broadcast — if the final action is ALLOW, publish an event
+                         to Kafka/SQS so the async feedback worker wakes up,
+                         fetches the transaction, and recalculates μ / σ
+                         in DynamoDB.  This is the learning feedback loop
+                         that makes the system smarter after each approval.
 
-This agent ensures the institution meets its regulatory obligations and
-maintains a defensible record of every fraud-detection decision.
+Writes to state
+---------------
+    compliance_logs         list[ComplianceEntry]  (appended via reducer)
+    kafka_event_published   bool
 """
 
 from __future__ import annotations
@@ -135,7 +140,7 @@ def _generate_action_log(state: FraudDetectionState) -> ComplianceEntry:
 
 def compliance_logging_agent(state: FraudDetectionState) -> dict:
     """
-    LangGraph node: Compliance Logging Agent.
+    LangGraph node: Compliance Logging Agent (Check 5).
 
     Reads
     -----
@@ -143,20 +148,20 @@ def compliance_logging_agent(state: FraudDetectionState) -> dict:
 
     Writes
     ------
-    - compliance_logs : list[ComplianceEntry]  (appended via reducer)
-
-    This is the terminal node.  Its output completes the pipeline state
-    that is returned to the caller.
+    - compliance_logs        : list[ComplianceEntry]  (appended via reducer)
+    - kafka_event_published  : bool
     """
-    logger.debug("=== Compliance Logging Agent: START ===")
+    logger.debug("=== Compliance Logging Agent (Check 5): START ===")
 
     txn = state.get("raw_transaction", {})
     txn_id = txn.get("transaction_id", "UNKNOWN")
     risk_score = state.get("risk_score", 0.0)
+    action = state.get("action_taken", {})
+    run_id = state.get("pipeline_run_id", "N/A")
 
     logs: list[ComplianceEntry] = []
 
-    # 1. Always generate an audit trail entry
+    # 1. Always generate an audit trail entry (regulatory requirement)
     audit_entry = _generate_audit_entry(state)
     logs.append(audit_entry)
     logger.debug(f"  Generated audit entry: {audit_entry['log_id']}")
@@ -175,9 +180,38 @@ def compliance_logging_agent(state: FraudDetectionState) -> dict:
             f"(risk_score={risk_score})"
         )
     else:
-        logger.debug(f"  SAR not required (risk_score={risk_score} < threshold={SAR_THRESHOLD})")
+        logger.debug(
+            f"  SAR not required (risk_score={risk_score} < threshold={SAR_THRESHOLD})"
+        )
+
+    # 4. Feedback loop: broadcast ALLOWED transactions to Kafka/SQS so the
+    #    async worker recalculates μ and σ in DynamoDB, making the system
+    #    smarter for this user's next transaction.
+    kafka_published = False
+    if action.get("action") == "allow":
+        from fraud_detection.core.kafka_client import publish_allowed_transaction
+
+        account_id = str(txn.get("account_id", ""))
+        amount = float(txn.get("amount", 0.0))
+        kafka_published = publish_allowed_transaction(
+            pipeline_run_id=run_id,
+            account_id=account_id,
+            transaction_id=txn_id,
+            amount=amount,
+        )
+        if kafka_published:
+            logger.debug(
+                "  Kafka/SQS event published for allowed transaction %s", txn_id
+            )
+        else:
+            logger.warning(
+                "  Kafka/SQS unavailable — feedback event logged only for %s", txn_id
+            )
 
     logger.debug(f"Transaction {txn_id}: {len(logs)} compliance entries generated")
-    logger.debug("=== Compliance Logging Agent: END ===\n")
+    logger.debug("=== Compliance Logging Agent (Check 5): END ===\n")
 
-    return {"compliance_logs": logs}
+    return {
+        "compliance_logs": logs,
+        "kafka_event_published": kafka_published,
+    }
